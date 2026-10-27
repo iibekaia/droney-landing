@@ -1,20 +1,21 @@
 const config = window.DRONEY_DOWNLOADS || {};
+const i18n = window.DRONEY_I18N;
 const platforms = [
- ['windowsSetup','⊞','Windows','x64 · ინსტალერი','Setup-win-x64.exe'],
- ['windowsPortable','⊞','Windows','x64 · ინსტალაციის გარეშე','Portable-win-x64.exe'],
+ ['windowsSetup','⊞','Windows','download.installer','Setup-win-x64.exe'],
+ ['windowsPortable','⊞','Windows','download.portable','Portable-win-x64.exe'],
  ['mac','⌘','macOS','Intel + Apple Silicon','mac-universal.dmg'],
  ['linux','◈','Linux','x64 · AppImage','linux-x86_64.AppImage']
 ];
-const downloads = document.querySelector('#downloads');
+const downloads = document.querySelector('#downloads'), translated = [];
 for (const [key,icon,title,description,file] of platforms) {
  const card = document.createElement('article'); card.className='download-card';
- for (const [tag,content,className] of [['div',icon,'os-icon'],['h3',title,''],['p',description,'']]) {const el=document.createElement(tag);el.textContent=content;el.className=className;card.append(el);}
+ for (const [tag,content,className] of [['div',icon,'os-icon'],['h3',title,''],['p',description,'']]) {const el=document.createElement(tag);el.textContent=content;el.className=className;card.append(el);if(tag==='p'&&description.startsWith('download.'))translated.push(()=>{el.textContent=i18n.t(description);});}
  let valid=false;try {valid=new URL(config[key]).protocol==='https:';}catch {}
- const action=document.createElement(valid?'a':'button');action.textContent=valid?'გადმოწერა ↓':'მალე დაემატება';
+ const action=document.createElement(valid?'a':'button');translated.push(()=>{action.textContent=i18n.t(valid?'download.action':'download.soon');});
  if(valid){action.href=config[key];action.rel='noopener';}else{action.disabled=true;}
  card.append(action);const filename=document.createElement('small');filename.textContent=`droney-${config.version || 'VERSION'}-${file}`;card.append(filename);downloads.append(card);
 }
-document.querySelector('#releaseNote').textContent=platforms.some(([key])=>config[key])?`ვერსია ${config.version} · აირჩიე ხელმისაწვდომი პაკეტი.`:'ჩამოტვირთვები მომზადების პროცესშია. საჯარო რელიზის ფაილები ჯერ არ არის მიბმული.';
+translated.push(()=>{document.querySelector('#releaseNote').textContent=platforms.some(([key])=>config[key])?i18n.t('download.version',{version:config.version}):i18n.t('download.pending');});
 document.querySelector('#year').textContent=new Date().getFullYear();
 const canvas=document.querySelector('#flight'),ctx=canvas.getContext('2d');canvas.tabIndex=0;
 const roll=document.querySelector('#roll'),pitch=document.querySelector('#pitch'),throttle=document.querySelector('#throttle');
@@ -39,7 +40,10 @@ function draw(timestamp){
 }
 function reset(){roll.value=0;pitch.value=0;throttle.value=35;angle=tilt=0;}
 document.querySelector('#reset').addEventListener('click',reset);
-document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{mode=button.dataset.mode;reset();document.querySelectorAll('[data-mode]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});document.querySelector('#modeLabel').textContent=mode.toUpperCase()+' MODE';document.querySelector('#modeDescription').textContent=mode==='angle'?'სტიკის გაშვებისას დრონი თანდათან სწორდება.':'სტიკი ბრუნვის სიჩქარეს ცვლის; ნულზე დახრა რჩება.';}));
+document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{mode=button.dataset.mode;reset();document.querySelectorAll('[data-mode]').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});document.querySelector('#modeLabel').textContent=mode.toUpperCase()+' MODE';describeMode();}));
+function describeMode(){document.querySelector('#modeDescription').textContent=i18n.t(mode==='angle'?'demo.angle':'demo.acro');}
+translated.push(describeMode);
+const translate=()=>translated.forEach(update=>update());translate();i18n.onChange(translate);
 for(const input of [roll,pitch]){input.addEventListener('pointerup',()=>{input.value=0;});input.addEventListener('pointercancel',()=>{input.value=0;});}
 canvas.addEventListener('keydown',event=>{const keys={ArrowLeft:[roll,-65],ArrowRight:[roll,65],ArrowUp:[pitch,-65],ArrowDown:[pitch,65]};if(keys[event.key]){event.preventDefault();keys[event.key][0].value=keys[event.key][1];}if(event.key.toLowerCase()==='r')reset();});
 canvas.addEventListener('keyup',event=>{if(event.key.startsWith('Arrow')){roll.value=pitch.value=0;}});canvas.addEventListener('blur',()=>{roll.value=pitch.value=0;});

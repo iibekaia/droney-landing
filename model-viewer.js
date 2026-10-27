@@ -6,6 +6,11 @@ import { OrbitControls } from './assets/vendor/OrbitControls.js';
 const host = document.querySelector('#model-viewer');
 const status = document.querySelector('#model-status');
 const buttons = [...document.querySelectorAll('[data-model]')];
+const { t, onChange } = window.DRONEY_I18N;
+// Keeps the status line translatable: remembers which message is showing.
+let statusKey = 'model.loading';
+function showStatus(key) { statusKey = key; status.hidden = false; status.textContent = t(key); }
+onChange(() => { status.textContent = t(statusKey); });
 // Both models share source units; scale by the unfolded drone's widest span so folded stays proportionally smaller.
 const SCALE = 3 / 2.924;
 const FLOOR = -.55;
@@ -16,7 +21,8 @@ try {
  renderer.outputColorSpace = THREE.SRGBColorSpace;
  renderer.toneMapping = THREE.ACESFilmicToneMapping;
  renderer.toneMappingExposure = 1.4;
- renderer.domElement.setAttribute('aria-label', 'DJI Mini 3 — გადაათრიე მოდელის შესაბრუნებლად; ისრები — შემობრუნება');
+ const label = () => renderer.domElement.setAttribute('aria-label', t('model.canvas'));
+ label(); onChange(label);
  renderer.domElement.tabIndex = 0;
  host.append(renderer.domElement);
  const scene = new THREE.Scene();
@@ -56,7 +62,7 @@ try {
  async function select(name) {
   const request = ++selection;
   buttons.forEach(button=>{const active=button.dataset.model===name;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
-  status.hidden = false; status.textContent = '3D მოდელი იტვირთება…'; host.setAttribute('aria-busy','true');
+  showStatus('model.loading'); host.setAttribute('aria-busy','true');
   try {
    if (!cache.has(name)) cache.set(name, loader.loadAsync(`./assets/models/mini-3-${name}.glb`).then(gltf=>{
     const model = gltf.scene;
@@ -73,7 +79,7 @@ try {
    status.hidden=true;
   } catch(error) {
    if(request!==selection)return;
-   status.textContent='მოდელი ვერ ჩაიტვირთა. სცადე მდგომარეობის ხელახლა არჩევა.';
+   showStatus('model.failed');
    console.error('DRONEY model loading failed',error);
   } finally {if(request===selection)host.setAttribute('aria-busy','false');}
  }
@@ -95,10 +101,10 @@ try {
  let visible=true;
  new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;}).observe(host);
  renderer.setAnimationLoop(()=>{if(!visible||document.hidden)return;controls.update();renderer.render(scene,camera);});
- renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();status.hidden=false;status.textContent='3D ხედი შეჩერდა. განაახლე გვერდი.';});
+ renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();showStatus('model.contextLost');});
  select('unfolded');
 } catch(error) {
- status.textContent='3D ხედისთვის საჭიროა WebGL-ის მხარდაჭერა. სცადე თანამედროვე ბრაუზერი.';
+ showStatus('model.noWebgl');
  buttons.forEach(button=>button.disabled=true);
  document.querySelector('#model-reset').disabled=true;
  console.error('DRONEY viewer unavailable',error);
