@@ -6,16 +6,16 @@ const platforms = [
  ['mac','⌘','macOS','Intel + Apple Silicon','mac-universal.dmg'],
  ['linux','◈','Linux','x64 · AppImage','linux-x86_64.AppImage']
 ];
-const downloads = document.querySelector('#downloads'), translated = [];
+const downloads = document.querySelector('#downloads'), translated = [], links = {};
 for (const [key,icon,title,description,file] of platforms) {
  const card = document.createElement('article'); card.className='download-card';
  for (const [tag,content,className] of [['div',icon,'os-icon'],['h3',title,''],['p',description,'']]) {const el=document.createElement(tag);el.textContent=content;el.className=className;card.append(el);if(tag==='p'&&description.startsWith('download.'))translated.push(()=>{el.textContent=i18n.t(description);});}
  let valid=false;try {valid=new URL(config[key]).protocol==='https:';}catch {}
  const action=document.createElement(valid?'a':'button');translated.push(()=>{action.textContent=i18n.t(valid?'download.action':'download.soon');});
  if(valid){action.href=config[key];action.rel='noopener';}else{action.disabled=true;}
- card.append(action);const filename=document.createElement('small');filename.textContent=`droney-${config.version || 'VERSION'}-${file}`;card.append(filename);downloads.append(card);
+ card.append(action);const filename=document.createElement('small');filename.textContent=config.version?`droney-${config.version}-${file}`:file;card.append(filename);downloads.append(card);links[key]={action,filename};
 }
-translated.push(()=>{document.querySelector('#releaseNote').textContent=platforms.some(([key])=>config[key])?i18n.t('download.version',{version:config.version}):i18n.t('download.pending');});
+translated.push(()=>{document.querySelector('#releaseNote').textContent=config.version?i18n.t('download.version',{version:config.version}):i18n.t(platforms.some(([key])=>config[key])?'download.latest':'download.pending');});
 document.querySelector('#year').textContent=new Date().getFullYear();
 const canvas=document.querySelector('#flight'),ctx=canvas.getContext('2d');canvas.tabIndex=0;
 const roll=document.querySelector('#roll'),pitch=document.querySelector('#pitch'),throttle=document.querySelector('#throttle');
@@ -44,6 +44,14 @@ document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener
 function describeMode(){document.querySelector('#modeDescription').textContent=i18n.t(mode==='angle'?'demo.angle':'demo.acro');}
 translated.push(describeMode);
 const translate=()=>translated.forEach(update=>update());translate();i18n.onChange(translate);
+// Swap in the latest GitHub release; the downloads.js links stay if the API fails or an asset is missing.
+fetch('https://api.github.com/repos/iibekaia/droney/releases/latest').then(r=>r.ok?r.json():Promise.reject(r.status)).then(release=>{
+ const version=String(release.tag_name).replace(/^v/,'');
+ const assets=platforms.map(([key,,,,file])=>[key,(release.assets||[]).find(a=>a.name===`droney-${version}-${file}`&&a.browser_download_url.startsWith('https://'))]);
+ if(assets.some(([key,asset])=>!asset||links[key].action.tagName!=='A'))return;
+ for(const [key,asset] of assets){config[key]=links[key].action.href=asset.browser_download_url;links[key].filename.textContent=asset.name;}
+ config.version=version;translate();
+}).catch(()=>{});
 for(const input of [roll,pitch]){input.addEventListener('pointerup',()=>{input.value=0;});input.addEventListener('pointercancel',()=>{input.value=0;});}
 canvas.addEventListener('keydown',event=>{const keys={ArrowLeft:[roll,-65],ArrowRight:[roll,65],ArrowUp:[pitch,-65],ArrowDown:[pitch,65]};if(keys[event.key]){event.preventDefault();keys[event.key][0].value=keys[event.key][1];}if(event.key.toLowerCase()==='r')reset();});
 canvas.addEventListener('keyup',event=>{if(event.key.startsWith('Arrow')){roll.value=pitch.value=0;}});canvas.addEventListener('blur',()=>{roll.value=pitch.value=0;});
