@@ -21,3 +21,7 @@ Canvas illustration, not the DRONEY physics engine. Angle returns to level at ne
 ## Project content
 
 Support claims are based on ../droney/README.md, settings presets and electron-builder.json. DJI RC-N1 / RC231 uses serial DUML; no blanket compatibility claim for other DJI remotes. Branding and FiraGO font copied from the source project; font license included in assets/.
+
+## Hero 3D viewer
+
+model-viewer.js uses locally vendored Three.js (license in assets/vendor/THREE-LICENSE.txt) and the supplied DJI Mini 3 folded/unfolded STL files. The unfolded model loads first; folded loads on demand and both are cached. Drag to orbit, scroll/pinch to zoom, use arrow keys with the viewer focused, or reset the view. Reduced motion disables automatic rotation. WebGL is required. STL has geometry only, so the neutral material and scene lighting are presentation choices, not original model textures. Static deployments must also include model-viewer.js and all assets/models and assets/vendor files. Models are approximately 10 MB each.
