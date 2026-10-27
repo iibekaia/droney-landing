@@ -3,7 +3,7 @@ const platforms = [
  ['windowsSetup','⊞','Windows','x64 · ინსტალერი','Setup-win-x64.exe'],
  ['windowsPortable','⊞','Windows','x64 · ინსტალაციის გარეშე','Portable-win-x64.exe'],
  ['mac','⌘','macOS','Intel + Apple Silicon','mac-universal.dmg'],
- ['linux','◈','Linux','x64 · AppImage','linux-x64.AppImage']
+ ['linux','◈','Linux','x64 · AppImage','linux-x86_64.AppImage']
 ];
 const downloads = document.querySelector('#downloads');
 for (const [key,icon,title,description,file] of platforms) {
