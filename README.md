@@ -12,7 +12,7 @@ Open http://localhost:4300. Set PORT to change the port. For static hosting, pub
 
 ## Downloads
 
-Edit downloads.js: version plus four public direct HTTPS asset URLs. Empty URLs render disabled buttons, never fake downloads. Links currently point at the public v0.0.3 assets of https://github.com/iibekaia/droney/releases. Asset filenames include the version, so on each new release update the release URL, version and all filenames together. Installers are not bundled into this repository.
+Edit downloads.js: version plus four public direct HTTPS asset URLs. Empty URLs render disabled buttons, never fake downloads. Links currently point at the public v0.0.4 assets of https://github.com/iibekaia/droney/releases. Asset filenames include the version, so on each new release update the release URL, version and all filenames together. Installers are not bundled into this repository.
 
 ## Demo
 
