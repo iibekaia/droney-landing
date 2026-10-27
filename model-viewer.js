@@ -1,10 +1,14 @@
 import * as THREE from './assets/vendor/three.module.js';
-import { STLLoader } from './assets/vendor/STLLoader.js';
+import { GLTFLoader } from './assets/vendor/GLTFLoader.js';
+import { MeshoptDecoder } from './assets/vendor/meshopt_decoder.module.js';
 import { OrbitControls } from './assets/vendor/OrbitControls.js';
 
 const host = document.querySelector('#model-viewer');
 const status = document.querySelector('#model-status');
 const buttons = [...document.querySelectorAll('[data-model]')];
+// Both models share source units; scale by the unfolded drone's widest span so folded stays proportionally smaller.
+const SCALE = 3 / 2.924;
+const FLOOR = -.55;
 try {
  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -42,29 +46,30 @@ try {
  const fill = new THREE.DirectionalLight(0xa9c6d2, 2); fill.position.set(0, 1, -5); scene.add(fill);
  const ringMaterial = new THREE.LineBasicMaterial({ color: 0x718b51, transparent: true, opacity: .25 });
  for (const radius of [1.5, 1.95, 2.4]) {
-  const points = Array.from({length:129},(_,i)=>new THREE.Vector3(Math.cos(i/128*Math.PI*2)*radius,-.8,Math.sin(i/128*Math.PI*2)*radius));
+  const points = Array.from({length:129},(_,i)=>new THREE.Vector3(Math.cos(i/128*Math.PI*2)*radius,FLOOR,Math.sin(i/128*Math.PI*2)*radius));
   scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),ringMaterial));
  }
- const material = new THREE.MeshStandardMaterial({ color: 0xc8ccbf, metalness: .18, roughness: .55 });
+ const material = new THREE.MeshStandardMaterial({ color: 0xc8ccbf, metalness: .18, roughness: .55, flatShading: true });
  const cache = new Map();
- const loader = new STLLoader();
+ const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
  let mesh, selection = 0;
  async function select(name) {
   const request = ++selection;
   buttons.forEach(button=>{const active=button.dataset.model===name;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
   status.hidden = false; status.textContent = '3D მოდელი იტვირთება…'; host.setAttribute('aria-busy','true');
   try {
-   if (!cache.has(name)) cache.set(name, loader.loadAsync(`./assets/models/mini-3-${name}.stl`).then(geometry=>{
-    geometry.center(); geometry.computeBoundingBox();
-    const size = geometry.boundingBox.getSize(new THREE.Vector3());
-    const scale = 3 / Math.max(size.x,size.y,size.z);
-    geometry.scale(scale,scale,scale); geometry.computeVertexNormals();
-    return geometry;
+   if (!cache.has(name)) cache.set(name, loader.loadAsync(`./assets/models/mini-3-${name}.glb`).then(gltf=>{
+    const model = gltf.scene;
+    model.traverse(child=>{if(child.isMesh)child.material=material;});
+    model.scale.setScalar(SCALE);
+    const box = new THREE.Box3().setFromObject(model), center = box.getCenter(new THREE.Vector3());
+    model.position.set(-center.x, FLOOR-box.min.y, -center.z);
+    return model;
    }).catch(error=>{cache.delete(name);throw error;}));
-   const geometry = await cache.get(name);
+   const model = await cache.get(name);
    if(request!==selection)return;
    if(mesh)scene.remove(mesh);
-   mesh = new THREE.Mesh(geometry,material); scene.add(mesh);
+   mesh = model; scene.add(mesh);
    status.hidden=true;
   } catch(error) {
    if(request!==selection)return;
