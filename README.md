@@ -12,7 +12,7 @@ Open http://localhost:4300. Set PORT to change the port. For static hosting, pub
 
 ## Downloads
 
-Download links follow the latest published release of https://github.com/iibekaia/droney/releases automatically: app.js asks the GitHub API on page load and uses the assets named `droney-<version>-<platform file>`. downloads.js pins no version: if the API is unreachable or the latest release lacks any of the four assets, the buttons open https://github.com/iibekaia/droney/releases/latest. Empty URLs render disabled buttons, never fake downloads. Installers are not bundled into this repository.
+Download links follow the latest published release of https://github.com/iibekaia/droney-releases/releases automatically: app.js asks the GitHub API on page load and uses the assets named `droney-<version>-<platform file>`. downloads.js pins no version: if the API is unreachable or the latest release lacks any of the four assets, the buttons open https://github.com/iibekaia/droney-releases/releases/latest. Empty URLs render disabled buttons, never fake downloads. Installers are not bundled into this repository.
 
 ## Demo
 

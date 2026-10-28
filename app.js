@@ -45,7 +45,7 @@ function describeMode(){document.querySelector('#modeDescription').textContent=i
 translated.push(describeMode);
 const translate=()=>translated.forEach(update=>update());translate();i18n.onChange(translate);
 // Swap in the latest GitHub release; the downloads.js links stay if the API fails or an asset is missing.
-fetch('https://api.github.com/repos/iibekaia/droney/releases/latest').then(r=>r.ok?r.json():Promise.reject(r.status)).then(release=>{
+fetch('https://api.github.com/repos/iibekaia/droney-releases/releases/latest').then(r=>r.ok?r.json():Promise.reject(r.status)).then(release=>{
  const version=String(release.tag_name).replace(/^v/,'');
  const assets=platforms.map(([key,,,,file])=>[key,(release.assets||[]).find(a=>a.name===`droney-${version}-${file}`&&a.browser_download_url.startsWith('https://'))]);
  if(assets.some(([key,asset])=>!asset||links[key].action.tagName!=='A'))return;
