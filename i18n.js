@@ -161,6 +161,8 @@
   document.documentElement.lang = lang;
   document.title = t('meta.title');
   document.querySelector('meta[name="description"]').content = t('meta.description');
+  // Each language has its own indexable URL (hreflang in index.html), so the canonical follows it.
+  document.querySelector('link[rel="canonical"]').href = lang === 'ka' ? 'https://droney.ge/' : 'https://droney.ge/?lang=' + lang;
   for (const el of document.querySelectorAll('[data-i18n]')) el.innerHTML = t(el.dataset.i18n);
   for (const el of document.querySelectorAll('[data-i18n-aria]')) el.setAttribute('aria-label', t(el.dataset.i18nAria));
   for (const button of document.querySelectorAll('[data-lang]')) {

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://droney.ge/sitemap.xml
