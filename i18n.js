@@ -2,8 +2,8 @@
 (() => {
  const dict = {
   ka: {
-   'meta.title': 'DRONEY — შენი პირველი ფრენა აქ იწყება',
-   'meta.description': 'DRONEY — დრონის ფრენის სიმულატორი. FPV რბოლა, თავისუფალი ფრენა და პულტით ვარჯიში Windows, macOS და Linux-ზე.',
+   'meta.title': 'DRONEY – დრონის ფრენის 3D სიმულატორი | FPV & DJI',
+   'meta.description': 'ისწავლე დრონის მართვა DRONEY-ის 3D სიმულატორში. ივარჯიშე FPV და DJI ფრენაში, გაიარე რბოლის ტრასები და გამოიყენე კლავიატურა ან დრონის პულტი.',
    'lang.group': 'ენა',
    'nav.label': 'მთავარი ნავიგაცია',
    'nav.try': 'გამოცადე',
@@ -76,8 +76,8 @@
    'footer.download': 'გადმოწერა ↑'
   },
   en: {
-   'meta.title': 'DRONEY — Your first flight starts here',
-   'meta.description': 'DRONEY — a drone flight simulator. FPV racing, free flight and controller training on Windows, macOS and Linux.',
+   'meta.title': 'DRONEY – 3D Drone Flight Simulator | FPV & DJI',
+   'meta.description': 'Learn to fly a drone in the DRONEY 3D simulator. Practice FPV and DJI flight, race through tracks, and use a keyboard or a drone controller.',
    'lang.group': 'Language',
    'nav.label': 'Main navigation',
    'nav.try': 'Try it',
