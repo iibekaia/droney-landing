@@ -1,18 +1,16 @@
 import * as THREE from './assets/vendor/three.module.js';
-import { GLTFLoader } from './assets/vendor/GLTFLoader.js';
-import { MeshoptDecoder } from './assets/vendor/meshopt_decoder.module.js';
 import { OrbitControls } from './assets/vendor/OrbitControls.js';
+import { buildFpvModel } from './fpv-model.js';
 
 const host = document.querySelector('#model-viewer');
 const status = document.querySelector('#model-status');
-const buttons = [...document.querySelectorAll('[data-model]')];
 const { t, onChange } = window.DRONEY_I18N;
 // Keeps the status line translatable: remembers which message is showing.
 let statusKey = 'model.loading';
 function showStatus(key) { statusKey = key; status.hidden = false; status.textContent = t(key); }
 onChange(() => { status.textContent = t(statusKey); });
-// Both models share source units; scale by the unfolded drone's widest span so folded stays proportionally smaller.
-const SCALE = 3 / 2.924;
+// The quad's widest span, props included, is scaled to this many scene units.
+const SPAN = 3;
 const FLOOR = -.55;
 try {
  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -48,42 +46,30 @@ try {
  reset();
  scene.add(new THREE.HemisphereLight(0xf3ffe7, 0x354032, 3));
  const key = new THREE.DirectionalLight(0xffffff, 4); key.position.set(3, 5, 4); scene.add(key);
- const rim = new THREE.DirectionalLight(0xc3f276, 3); rim.position.set(-4, 2, -3); scene.add(rim);
+ const rim = new THREE.DirectionalLight(0xc3f276, 1.2); rim.position.set(-4, 2, -3); scene.add(rim);
  const fill = new THREE.DirectionalLight(0xa9c6d2, 2); fill.position.set(0, 1, -5); scene.add(fill);
  const ringMaterial = new THREE.LineBasicMaterial({ color: 0x718b51, transparent: true, opacity: .25 });
  for (const radius of [1.5, 1.95, 2.4]) {
   const points = Array.from({length:129},(_,i)=>new THREE.Vector3(Math.cos(i/128*Math.PI*2)*radius,FLOOR,Math.sin(i/128*Math.PI*2)*radius));
   scene.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),ringMaterial));
  }
- const material = new THREE.MeshStandardMaterial({ color: 0xc8ccbf, metalness: .18, roughness: .55, flatShading: true });
- const cache = new Map();
- const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
- let mesh, selection = 0;
- async function select(name) {
-  const request = ++selection;
-  buttons.forEach(button=>{const active=button.dataset.model===name;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
-  showStatus('model.loading'); host.setAttribute('aria-busy','true');
-  try {
-   if (!cache.has(name)) cache.set(name, loader.loadAsync(`./assets/models/mini-3-${name}.glb`).then(gltf=>{
-    const model = gltf.scene;
-    model.traverse(child=>{if(child.isMesh)child.material=material;});
-    model.scale.setScalar(SCALE);
-    const box = new THREE.Box3().setFromObject(model), center = box.getCenter(new THREE.Vector3());
-    model.position.set(-center.x, FLOOR-box.min.y, -center.z);
-    return model;
-   }).catch(error=>{cache.delete(name);throw error;}));
-   const model = await cache.get(name);
-   if(request!==selection)return;
-   if(mesh)scene.remove(mesh);
-   mesh = model; scene.add(mesh);
-   status.hidden=true;
-  } catch(error) {
-   if(request!==selection)return;
-   showStatus('model.failed');
-   console.error('DRONEY model loading failed',error);
-  } finally {if(request===selection)host.setAttribute('aria-busy','false');}
- }
- buttons.forEach(button=>button.addEventListener('click',()=>select(button.dataset.model)));
+ // Soft studio gradient for reflections, so the metal parts (motors, canister, standoffs) are not flat black.
+ const sky = document.createElement('canvas'); sky.width = 256; sky.height = 128;
+ const paint = sky.getContext('2d'), gradient = paint.createLinearGradient(0, 0, 0, 128);
+ gradient.addColorStop(0, '#f4f4f4'); gradient.addColorStop(.45, '#80828a'); gradient.addColorStop(.55, '#2a2b2e'); gradient.addColorStop(1, '#0e0e10');
+ paint.fillStyle = gradient; paint.fillRect(0, 0, 256, 128);
+ const skyTexture = new THREE.CanvasTexture(sky); skyTexture.mapping = THREE.EquirectangularReflectionMapping; skyTexture.colorSpace = THREE.SRGBColorSpace;
+ const pmrem = new THREE.PMREMGenerator(renderer);
+ scene.environment = pmrem.fromEquirectangular(skyTexture).texture;
+ scene.environmentIntensity = .7;
+ skyTexture.dispose(); pmrem.dispose();
+ const { group: model, props } = buildFpvModel();
+ const size = new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3());
+ model.scale.setScalar(SPAN / Math.max(size.x, size.z));
+ const box = new THREE.Box3().setFromObject(model), center = box.getCenter(new THREE.Vector3());
+ model.position.set(-center.x, FLOOR-box.min.y, -center.z);
+ scene.add(model);
+ status.hidden = true;
  document.querySelector('#model-reset').addEventListener('click',reset);
  renderer.domElement.addEventListener('keydown',event=>{
   const direction={ArrowLeft:-1,ArrowRight:1,ArrowUp:-1,ArrowDown:1}[event.key];
@@ -100,12 +86,10 @@ try {
  }).observe(host);
  let visible=true;
  new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;}).observe(host);
- renderer.setAnimationLoop(()=>{if(!visible||document.hidden)return;controls.update();renderer.render(scene,camera);});
+ renderer.setAnimationLoop(()=>{if(!visible||document.hidden)return;if(!motion.matches)for(const p of props)p.rotation.y+=p.userData.dir*.06;controls.update();renderer.render(scene,camera);});
  renderer.domElement.addEventListener('webglcontextlost',event=>{event.preventDefault();showStatus('model.contextLost');});
- select('unfolded');
 } catch(error) {
  showStatus('model.noWebgl');
- buttons.forEach(button=>button.disabled=true);
  document.querySelector('#model-reset').disabled=true;
  console.error('DRONEY viewer unavailable',error);
 }
